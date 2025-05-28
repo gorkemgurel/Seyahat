@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 class PlanManager: ObservableObject {
     @Published var savedPlans: [PlanConfiguration] = []
@@ -27,21 +28,39 @@ class PlanManager: ObservableObject {
     }
     
     func deletePlan(_ plan: PlanConfiguration) {
-        savedPlans.removeAll { $0.id == plan.id }
+        withAnimation {
+            savedPlans.removeAll { $0.id == plan.id }
+        }
+        saveToUserDefaults()
+    }
+    
+    func savePlans() {
         saveToUserDefaults()
     }
     
     private func saveToUserDefaults() {
-        if let encoded = try? JSONEncoder().encode(savedPlans) {
+        do {
+            let encoded = try JSONEncoder().encode(savedPlans)
             userDefaults.set(encoded, forKey: plansKey)
+            userDefaults.synchronize()
+            print("Plans saved successfully. Total plans: \(savedPlans.count)")
+        } catch {
+            print("Failed to save plans: \(error)")
         }
     }
     
     private func loadSavedPlans() {
-        guard let data = userDefaults.data(forKey: plansKey),
-              let plans = try? JSONDecoder().decode([PlanConfiguration].self, from: data) else {
+        guard let data = userDefaults.data(forKey: plansKey) else {
+            print("No saved plans found")
             return
         }
-        savedPlans = plans
+        
+        do {
+            let plans = try JSONDecoder().decode([PlanConfiguration].self, from: data)
+            self.savedPlans = plans
+            print("Loaded \(plans.count) plans")
+        } catch {
+            print("Failed to load plans: \(error)")
+        }
     }
 }
