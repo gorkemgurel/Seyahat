@@ -26,9 +26,10 @@ struct DistrictListView: View {
                     
                     Spacer()
                     
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    // Bu satırı kaldırın - NavigationLink zaten otomatik chevron ekliyor
+                    // Image(systemName: "chevron.right")
+                    //     .font(.caption)
+                    //     .foregroundColor(.secondary)
                 }
                 .padding(.vertical, 4)
             }

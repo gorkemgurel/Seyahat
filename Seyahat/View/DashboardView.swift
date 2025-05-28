@@ -13,7 +13,24 @@ struct DashboardView: View {
     @State private var showPlanDetails = false
     
     var body: some View {
-        NavigationView {
+        VStack(spacing: 0) {
+            // Custom header
+            HStack {
+                Text("Seyahat Planlayıcı")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                
+                Spacer()
+                
+                Button(action: { showingCitySelection = true }) {
+                    Image(systemName: "plus")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                }
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -35,6 +52,7 @@ struct DashboardView: View {
                         )
                     )
                     .cornerRadius(12)
+                    
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Planlarım")
                             .font(.headline)
@@ -49,13 +67,6 @@ struct DashboardView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Seyahat Planlayıcı")
-            .navigationBarItems(
-                trailing: Button(action: { showingCitySelection = true }) {
-                    Image(systemName: "plus")
-                        .font(.title2)
-                }
-            )
         }
         .sheet(isPresented: $showingCitySelection) {
             ProvinceListView()

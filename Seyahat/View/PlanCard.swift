@@ -52,16 +52,18 @@ struct PlanCard: View {
             .cornerRadius(12)
             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
         }
+        .contextMenu {
+            Button(role: .destructive) {
+                planManager.deletePlan(plan)
+            } label: {
+                Label("Sil", systemImage: "trash")
+            }
+        }
         .sheet(isPresented: $showingCitySelection) {
             PlanView(
                 viewModel: PlanViewModel(district: plan.district!, planConfiguration: plan),
-                onSavePlan: { planConfiguration in
-                    planManager.savePlan(planConfiguration)
-                }
+                onSavePlan: nil
             )
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
-            showingCitySelection = false
         }
     }
     
