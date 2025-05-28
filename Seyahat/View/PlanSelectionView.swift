@@ -9,7 +9,7 @@ import SwiftUI
 
 struct PlanSelectionView: View {
     let district: District
-    @StateObject private var planManager = PlanManager()
+    @ObservedObject private var planManager = PlanManager.shared
     @State private var showingCreatePlan = false
     @Environment(\.presentationMode) var presentationMode
     
@@ -108,7 +108,7 @@ struct PlanRowView: View {
         case .attraction: return .blue
         case .cafe: return .green
         case .dinner: return .red
-        case .dessert: return .pink
+        case .dessert: return .purple
         }
     }
 }

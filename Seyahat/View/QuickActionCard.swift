@@ -5,7 +5,7 @@
 //  Created by Gorkem Gurel on 28.05.2025.
 //
 
-import SwiftUI
+/*import SwiftUI
 
 struct QuickActionCard: View {
     let icon: String
@@ -39,3 +39,4 @@ struct QuickActionCard: View {
         .cornerRadius(12)
     }
 }
+*/

@@ -71,9 +71,9 @@ struct PlanCard: View {
         switch category {
         case .breakfast: return .orange
         case .attraction: return .blue
-        case .cafe: return .brown
+        case .cafe: return .green
         case .dinner: return .red
-        case .dessert: return .pink
+        case .dessert: return .purple
         }
     }
 }

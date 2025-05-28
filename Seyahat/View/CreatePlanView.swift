@@ -9,9 +9,8 @@ import SwiftUI
 
 struct CreatePlanView: View {
     let district: District
-    @ObservedObject var planManager: PlanManager
+    @ObservedObject var planManager = PlanManager.shared
     @Environment(\.presentationMode) var presentationMode
-    @StateObject private var dismissalManager = SheetDismissalManager.shared
     
     @State private var planName: String = ""
     @State private var planItems: [PlanItem] = []
@@ -73,23 +72,11 @@ struct CreatePlanView: View {
             .navigationTitle("Yeni Plan Oluştur")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                leading: Button("İptal") { presentationMode.wrappedValue.dismiss() },
-                trailing: NavigationLink(destination: PlanView(
-                    viewModel: PlanViewModel(
-                        district: district,
-                        planConfiguration: PlanConfiguration(
-                            items: planItems,
-                            name: planName,
-                            district: district
-                        )
-                    ),
-                    onSavePlan: { planConfiguration in
-                        planManager.savePlan(planConfiguration)
-                    }
-                )) {
-                    Text("İleri")
-                        .font(.body)
-                        .padding(.vertical, 6)
+                leading: Button("İptal") {
+                    presentationMode.wrappedValue.dismiss()
+                },
+                trailing: Button("Kaydet") {
+                    savePlan()
                 }
                 .disabled(planName.isEmpty || planItems.isEmpty)
             )
@@ -109,11 +96,6 @@ struct CreatePlanView: View {
         .onAppear {
             if planName.isEmpty {
                 planName = "\(district.name) Gezisi"
-            }
-        }
-        .onReceive(dismissalManager.$shouldDismissAllSheets) { shouldDismiss in
-            if shouldDismiss {
-                presentationMode.wrappedValue.dismiss()
             }
         }
     }
@@ -136,6 +118,17 @@ struct CreatePlanView: View {
     private func movePlanItems(from source: IndexSet, to destination: Int) {
         planItems.move(fromOffsets: source, toOffset: destination)
     }
+    
+    private func savePlan() {
+        let newPlan = PlanConfiguration(items: planItems, name: planName, district: self.district)
+        planManager.savePlan(newPlan)
+        
+        // Notification gönder - tüm sheet'leri kapat
+        NotificationCenter.default.post(name: .dismissAllViews, object: nil)
+        
+        // Mevcut view'ı da kapat
+        presentationMode.wrappedValue.dismiss()
+    }
 }
 
 // Plan item satırı
@@ -153,14 +146,14 @@ struct PlanItemRow: View {
                 
                 HStack {
                     Text(item.category.rawValue)
-                        .font(.caption)
-                        .padding(.horizontal, 8)
+                        .font(.caption2)
+                        .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.1))
-                        .foregroundColor(.blue)
+                        .background(categoryColor(for: item.category).opacity(0.2))
+                        .foregroundColor(categoryColor(for: item.category))
                         .cornerRadius(4)
                     
-                    Text("\(item.maxCount) öneri")
+                    Text("• \(item.maxCount) öneri")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -174,28 +167,43 @@ struct PlanItemRow: View {
             }
             .buttonStyle(BorderlessButtonStyle())
         }
-        .contextMenu {
-            Button("Düzenle") { onEdit() }
-            Button("Sil", role: .destructive) { onDelete() }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive, action: onDelete) {
+                Label("Sil", systemImage: "trash")
+            }
+        }
+    }
+    
+    private func categoryColor(for category: PlanCategory) -> Color {
+        switch category {
+        case .breakfast: return .orange
+        case .attraction: return .blue
+        case .cafe: return .green
+        case .dinner: return .red
+        case .dessert: return .purple
         }
     }
 }
 
 // Kategori seçici
 struct CategoryPickerView: View {
-    let onSelect: (PlanCategory) -> Void
+    let onCategorySelected: (PlanCategory) -> Void
     @Environment(\.presentationMode) var presentationMode
-    @StateObject private var dismissalManager = SheetDismissalManager.shared
     
     var body: some View {
         NavigationView {
-            List(PlanCategory.allCases) { category in
-                Button(action: { onSelect(category) }) {
-                    HStack {
-                        Text(category.rawValue)
-                        Spacer()
-                        Image(systemName: "plus.circle")
-                            .foregroundColor(.blue)
+            List {
+                ForEach(PlanCategory.allCases) { category in
+                    Button(action: {
+                        onCategorySelected(category)
+                    }) {
+                        HStack {
+                            Text(category.rawValue)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "plus.circle")
+                                .foregroundColor(.blue)
+                        }
                     }
                 }
             }
@@ -203,11 +211,6 @@ struct CategoryPickerView: View {
             .navigationBarItems(
                 trailing: Button("İptal") { presentationMode.wrappedValue.dismiss() }
             )
-        }
-        .onReceive(dismissalManager.$shouldDismissAllSheets) { shouldDismiss in
-            if shouldDismiss {
-                presentationMode.wrappedValue.dismiss()
-            }
         }
     }
 }
@@ -220,7 +223,6 @@ struct EditPlanItemView: View {
     @State private var title: String
     @State private var maxCount: Int
     @Environment(\.presentationMode) var presentationMode
-    @StateObject private var dismissalManager = SheetDismissalManager.shared
     
     init(item: PlanItem, onSave: @escaping (PlanItem) -> Void) {
         self.item = item
@@ -252,9 +254,6 @@ struct EditPlanItemView: View {
                 leading: Button("İptal") { presentationMode.wrappedValue.dismiss() },
                 trailing: Button("Kaydet") { saveItem() }
             )
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
-            presentationMode.wrappedValue.dismiss()
         }
     }
     

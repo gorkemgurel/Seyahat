@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct DashboardView: View {
-    @StateObject private var planManager = PlanManager()
+    @ObservedObject var planManager = PlanManager.shared
     @State private var showingCitySelection = false
     @State private var showPlanDetails = false
     
@@ -70,6 +70,12 @@ struct DashboardView: View {
         }
         .sheet(isPresented: $showingCitySelection) {
             ProvinceListView()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
+            showingCitySelection = false
+        }
+        .onAppear {
+            planManager.loadSavedPlans()
         }
     }
     

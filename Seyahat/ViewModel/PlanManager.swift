@@ -9,47 +9,38 @@ import Foundation
 import SwiftUI
 
 class PlanManager: ObservableObject {
+    static let shared = PlanManager()
+    
     @Published var savedPlans: [PlanConfiguration] = []
     
     private let userDefaults = UserDefaults.standard
     private let plansKey = "SavedTravelPlans"
     
-    init() {
+    private init() {
         loadSavedPlans()
     }
     
     func savePlan(_ plan: PlanConfiguration) {
-        if let index = savedPlans.firstIndex(where: { $0.id == plan.id }) {
-            savedPlans[index] = plan
-        } else {
-            savedPlans.append(plan)
+        DispatchQueue.main.async {
+            if let index = self.savedPlans.firstIndex(where: { $0.id == plan.id }) {
+                self.savedPlans[index] = plan
+            } else {
+                self.savedPlans.append(plan)
+            }
+            self.saveToUserDefaults()
+            print("Plan saved: \(plan.name), total plans: \(self.savedPlans.count)")
         }
-        saveToUserDefaults()
     }
     
     func deletePlan(_ plan: PlanConfiguration) {
-        withAnimation {
-            savedPlans.removeAll { $0.id == plan.id }
-        }
-        saveToUserDefaults()
-    }
-    
-    func savePlans() {
-        saveToUserDefaults()
-    }
-    
-    private func saveToUserDefaults() {
-        do {
-            let encoded = try JSONEncoder().encode(savedPlans)
-            userDefaults.set(encoded, forKey: plansKey)
-            userDefaults.synchronize()
-            print("Plans saved successfully. Total plans: \(savedPlans.count)")
-        } catch {
-            print("Failed to save plans: \(error)")
+        DispatchQueue.main.async {
+            self.savedPlans.removeAll { $0.id == plan.id }
+            self.saveToUserDefaults()
+            print("Plan deleted: \(plan.name), remaining plans: \(self.savedPlans.count)")
         }
     }
     
-    private func loadSavedPlans() {
+    func loadSavedPlans() {
         guard let data = userDefaults.data(forKey: plansKey) else {
             print("No saved plans found")
             return
@@ -57,10 +48,23 @@ class PlanManager: ObservableObject {
         
         do {
             let plans = try JSONDecoder().decode([PlanConfiguration].self, from: data)
-            self.savedPlans = plans
-            print("Loaded \(plans.count) plans")
+            DispatchQueue.main.async {
+                self.savedPlans = plans
+                print("Loaded \(plans.count) plans")
+            }
         } catch {
             print("Failed to load plans: \(error)")
+        }
+    }
+    
+    private func saveToUserDefaults() {
+        do {
+            let encoded = try JSONEncoder().encode(savedPlans)
+            userDefaults.set(encoded, forKey: plansKey)
+            userDefaults.synchronize()
+            print("Plans saved to UserDefaults successfully. Total plans: \(savedPlans.count)")
+        } catch {
+            print("Failed to save plans: \(error)")
         }
     }
 }
