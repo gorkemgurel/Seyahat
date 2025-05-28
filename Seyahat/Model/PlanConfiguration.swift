@@ -13,13 +13,15 @@ struct PlanConfiguration: Codable {
     var id: UUID
     var createdDate: Date?
     var lastUsedDate: Date?
+    var district: District?
     
-    init(items: [PlanItem], name: String = "Özel Plan") {
+    init(items: [PlanItem], name: String = "Özel Plan", district: District) {
         self.items = items
         self.name = name
         self.id = UUID()
         self.createdDate = Date()
         self.lastUsedDate = Date()
+        self.district = district
     }
     
     private init(items: [PlanItem], name: String, isDefault: Bool) {

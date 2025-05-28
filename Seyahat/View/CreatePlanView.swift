@@ -116,7 +116,7 @@ struct CreatePlanView: View {
     }
     
     private func savePlan() {
-        let newPlan = PlanConfiguration(items: planItems, name: planName)
+        let newPlan = PlanConfiguration(items: planItems, name: planName, district: self.district)
         planManager.savePlan(newPlan)
         presentationMode.wrappedValue.dismiss()
     }

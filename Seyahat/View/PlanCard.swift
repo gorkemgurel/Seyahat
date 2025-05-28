@@ -53,7 +53,8 @@ struct PlanCard: View {
             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
         }
         .sheet(isPresented: $showingCitySelection) {
-            CitySelectionView(preselectedPlan: plan)
+            //CitySelectionView(preselectedPlan: plan)
+            PlanView(viewModel: PlanViewModel(district: plan.district!, planConfiguration: plan))
         }
     }
     

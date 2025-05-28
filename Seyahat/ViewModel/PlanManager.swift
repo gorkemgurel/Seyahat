@@ -40,7 +40,6 @@ class PlanManager: ObservableObject {
     private func loadSavedPlans() {
         guard let data = userDefaults.data(forKey: plansKey),
               let plans = try? JSONDecoder().decode([PlanConfiguration].self, from: data) else {
-            savedPlans = [.defaultPlan]
             return
         }
         savedPlans = plans
