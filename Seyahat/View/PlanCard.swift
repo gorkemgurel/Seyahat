@@ -60,10 +60,14 @@ struct PlanCard: View {
             }
         }
         .sheet(isPresented: $showingCitySelection) {
-            PlanView(
-                viewModel: PlanViewModel(district: plan.district!, planConfiguration: plan),
-                onSavePlan: nil
-            )
+            NavigationView {
+                PlanView(
+                    viewModel: PlanViewModel(district: plan.district!, planConfiguration: plan),
+                    onSavePlan: { updatedPlan in
+                        planManager.savePlan(updatedPlan)
+                    }
+                )
+            }
         }
     }
     

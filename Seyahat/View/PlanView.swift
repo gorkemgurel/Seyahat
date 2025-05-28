@@ -55,18 +55,23 @@ struct PlanView: View {
             .padding()
         }
         .navigationTitle("\(viewModel.district.name) Planı")
-        .navigationBarItems(
-            trailing: Button("Kaydet") {
-                savePlan()
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Kaydet") {
+                    savePlan()
+                }
             }
-        )
+        }
         .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
             presentationMode.wrappedValue.dismiss()
         }
     }
     
     private func savePlan() {
-        onSavePlan?(viewModel.currentPlanConfiguration)
+        if let onSavePlan = onSavePlan {
+            onSavePlan(viewModel.currentPlanConfiguration)
+        }
         GlobalDismissManager.shared.dismissAll()
     }
     
