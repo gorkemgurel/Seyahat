@@ -8,14 +8,19 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var authService: AuthService
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        switch authService.authState {
+                case .unknown:
+                    //ProgressView()
+                    Color.white
+                case .signedIn:
+                    //MainView()
+                    //ProvinceListView()
+                DashboardView()
+                case .signedOut:
+                    LoginView()
+                }
     }
 }
 
