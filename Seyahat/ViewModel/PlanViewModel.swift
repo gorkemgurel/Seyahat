@@ -24,7 +24,12 @@ class PlanViewModel: ObservableObject {
         self.district = district
         self.currentPlanConfiguration = planConfiguration
         setupFilteredPlaces()
-        generateInitialAdvices()
+        
+        // Eğer kayıtlı seçilmiş yerler varsa onları yükle, yoksa yeni öneriler oluştur
+        loadSelectedPlacesFromConfiguration()
+        if planAdvices.isEmpty {
+            generateInitialAdvices()
+        }
     }
     
     func updatePlanConfiguration(_ newConfiguration: PlanConfiguration) {
@@ -44,6 +49,25 @@ class PlanViewModel: ObservableObject {
         let item = currentPlanConfiguration.items[index]
         planAdvices.removeValue(forKey: item.id)
         currentPlanConfiguration.items.remove(at: index)
+    }
+    
+    // Seçilmiş yerleri senkronize etme metodları
+    func syncPlanAdvicesToConfiguration() {
+        for (planItemId, places) in planAdvices {
+            currentPlanConfiguration.updateSelectedPlaces(for: planItemId, places: places)
+        }
+    }
+    
+    func loadSelectedPlacesFromConfiguration() {
+        for item in currentPlanConfiguration.items {
+            if let savedPlaces = currentPlanConfiguration.getSelectedPlaces(for: item.id) {
+                planAdvices[item.id] = savedPlaces
+                // Kayıtlı yerleri session disliked listesine ekle
+                for place in savedPlaces {
+                    sessionDislikedAndActivePlaceNames.insert(place.name)
+                }
+            }
+        }
     }
     
     // Mesafe hesaplama fonksiyonları
@@ -251,8 +275,17 @@ class PlanViewModel: ObservableObject {
         planAdvices[planItem.id] = Array(newAdvices.prefix(planItem.maxCount))
     }
     
+    // PlanViewModel'a bu metodu ekleyin
+    func autoSyncConfiguration() {
+        syncPlanAdvicesToConfiguration()
+    }
+
+    // suggestAlternative metodunun sonuna bu satırı ekleyin:
     func suggestAlternative(for planItemId: UUID, dislikedPlace: Place, reason: DislikeReason) {
         guard let planItem = currentPlanConfiguration.items.first(where: { $0.id == planItemId }) else { return }
         suggestAlternativeForPlanItem(planItem, dislikedPlace: dislikedPlace, reason: reason)
+        
+        // Değişiklik yapıldığında otomatik sync
+        autoSyncConfiguration()
     }
 }

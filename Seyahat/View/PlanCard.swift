@@ -61,13 +61,16 @@ struct PlanCard: View {
         }
         .sheet(isPresented: $showingCitySelection) {
             NavigationView {
-                PlanView(
-                    viewModel: PlanViewModel(district: plan.district!, planConfiguration: plan),
-                    onSavePlan: { updatedPlan in
-                        planManager.savePlan(updatedPlan)
-                    }
-                )
-            }
+                            PlanView(
+                                viewModel: PlanViewModel(district: plan.district!, planConfiguration: plan),
+                                onSavePlan: { updatedPlan in
+                                    // Plan güncellendikten sonra kaydet
+                                    var planToSave = updatedPlan
+                                    planToSave.lastModified = Date() // Son değişiklik tarihini ekleyin
+                                    planManager.savePlan(planToSave)
+                                }
+                            )
+                        }
         }
     }
     

@@ -66,9 +66,19 @@ struct PlanView: View {
         .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
             presentationMode.wrappedValue.dismiss()
         }
+        .onDisappear {
+            // View kapanırken değişiklikleri kaydet
+            viewModel.syncPlanAdvicesToConfiguration()
+            if let onSavePlan = onSavePlan {
+                onSavePlan(viewModel.currentPlanConfiguration)
+            }
+        }
     }
     
     private func savePlan() {
+        // Önce değişiklikleri configuration'a sync et
+        viewModel.syncPlanAdvicesToConfiguration()
+        
         if let onSavePlan = onSavePlan {
             onSavePlan(viewModel.currentPlanConfiguration)
         }

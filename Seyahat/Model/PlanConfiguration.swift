@@ -13,7 +13,9 @@ struct PlanConfiguration: Codable {
     var id: UUID
     var createdDate: Date?
     var lastUsedDate: Date?
+    var lastModified: Date = Date() // Yeni eklenen property
     var district: District?
+    var selectedPlaces: [String: [Place]] = [:] // planItemId.uuidString -> seçilmiş yerler
     
     init(items: [PlanItem], name: String = "Özel Plan", district: District) {
         self.items = items
@@ -21,13 +23,17 @@ struct PlanConfiguration: Codable {
         self.id = UUID()
         self.createdDate = Date()
         self.lastUsedDate = Date()
+        self.lastModified = Date()
         self.district = district
+        self.selectedPlaces = [:]
     }
     
     private init(items: [PlanItem], name: String, isDefault: Bool) {
         self.items = items
         self.name = name
         self.id = UUID()
+        self.lastModified = Date()
+        self.selectedPlaces = [:]
         if isDefault {
             self.createdDate = nil
             self.lastUsedDate = nil
@@ -48,5 +54,28 @@ struct PlanConfiguration: Codable {
     
     mutating func updateLastUsedDate() {
         lastUsedDate = Date()
+        lastModified = Date() // Son kullanımda lastModified'ı da güncelle
+    }
+    
+    // Seçilmiş yerleri güncelleme metodları
+    mutating func updateSelectedPlaces(for planItemId: UUID, places: [Place]) {
+        selectedPlaces[planItemId.uuidString] = places
+        lastModified = Date() // Seçilmiş yerler güncellendiğinde lastModified'ı güncelle
+    }
+    
+    func getSelectedPlaces(for planItemId: UUID) -> [Place]? {
+        return selectedPlaces[planItemId.uuidString]
+    }
+    
+    // CodingKeys enum'unu da güncellemek gerekiyor
+    enum CodingKeys: String, CodingKey {
+        case items
+        case name
+        case id
+        case createdDate
+        case lastUsedDate
+        case lastModified
+        case district
+        case selectedPlaces
     }
 }
