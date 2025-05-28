@@ -33,6 +33,9 @@ struct ProvinceListView: View {
                 }
             )
         }
+        .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
+            presentationMode.wrappedValue.dismiss()
+        }
     }
 }
 

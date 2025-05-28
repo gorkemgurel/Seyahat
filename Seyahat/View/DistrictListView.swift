@@ -44,7 +44,10 @@ struct DistrictListView: View {
     private func destinationView(for district: District) -> some View {
         if let selectedPlan = selectedPlan {
             // Eğer plan önceden seçilmişse direkt PlanView'a git
-            PlanView(viewModel: PlanViewModel(district: district, planConfiguration: selectedPlan))
+            PlanView(
+                viewModel: PlanViewModel(district: district, planConfiguration: selectedPlan),
+                onSavePlan: nil // Bu durumda kaydetme işlemi olmayacak çünkü plan zaten var
+            )
         } else {
             // Plan seçilmemişse plan seçim ekranına git
             PlanSelectionView(district: district)

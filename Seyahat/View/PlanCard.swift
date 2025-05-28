@@ -53,8 +53,15 @@ struct PlanCard: View {
             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
         }
         .sheet(isPresented: $showingCitySelection) {
-            //CitySelectionView(preselectedPlan: plan)
-            PlanView(viewModel: PlanViewModel(district: plan.district!, planConfiguration: plan))
+            PlanView(
+                viewModel: PlanViewModel(district: plan.district!, planConfiguration: plan),
+                onSavePlan: { planConfiguration in
+                    planManager.savePlan(planConfiguration)
+                }
+            )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
+            showingCitySelection = false
         }
     }
     

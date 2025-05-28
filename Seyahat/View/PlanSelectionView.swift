@@ -11,11 +11,17 @@ struct PlanSelectionView: View {
     let district: District
     @StateObject private var planManager = PlanManager()
     @State private var showingCreatePlan = false
+    @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
         List {
             Section(header: Text("Hazır Planlar")) {
-                NavigationLink(destination: PlanView(viewModel: PlanViewModel(district: district, planConfiguration: .defaultPlan))) {
+                NavigationLink(destination: PlanView(
+                    viewModel: PlanViewModel(district: district, planConfiguration: .defaultPlan),
+                    onSavePlan: { planConfiguration in
+                        planManager.savePlan(planConfiguration)
+                    }
+                )) {
                     PlanRowView(plan: .defaultPlan)
                 }
             }
@@ -38,6 +44,10 @@ struct PlanSelectionView: View {
                 district: district,
                 planManager: planManager
             )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
+            showingCreatePlan = false
+            presentationMode.wrappedValue.dismiss()
         }
     }
     

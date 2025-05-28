@@ -11,6 +11,7 @@ struct CreatePlanView: View {
     let district: District
     @ObservedObject var planManager: PlanManager
     @Environment(\.presentationMode) var presentationMode
+    @StateObject private var dismissalManager = SheetDismissalManager.shared
     
     @State private var planName: String = ""
     @State private var planItems: [PlanItem] = []
@@ -73,8 +74,24 @@ struct CreatePlanView: View {
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
                 leading: Button("İptal") { presentationMode.wrappedValue.dismiss() },
-                trailing: Button("Kaydet") { savePlan() }
-                    .disabled(planName.isEmpty || planItems.isEmpty)
+                trailing: NavigationLink(destination: PlanView(
+                    viewModel: PlanViewModel(
+                        district: district,
+                        planConfiguration: PlanConfiguration(
+                            items: planItems,
+                            name: planName,
+                            district: district
+                        )
+                    ),
+                    onSavePlan: { planConfiguration in
+                        planManager.savePlan(planConfiguration)
+                    }
+                )) {
+                    Text("İleri")
+                        .font(.body)
+                        .padding(.vertical, 6)
+                }
+                .disabled(planName.isEmpty || planItems.isEmpty)
             )
         }
         .sheet(isPresented: $showingCategoryPicker) {
@@ -92,6 +109,11 @@ struct CreatePlanView: View {
         .onAppear {
             if planName.isEmpty {
                 planName = "\(district.name) Gezisi"
+            }
+        }
+        .onReceive(dismissalManager.$shouldDismissAllSheets) { shouldDismiss in
+            if shouldDismiss {
+                presentationMode.wrappedValue.dismiss()
             }
         }
     }
@@ -113,12 +135,6 @@ struct CreatePlanView: View {
     
     private func movePlanItems(from source: IndexSet, to destination: Int) {
         planItems.move(fromOffsets: source, toOffset: destination)
-    }
-    
-    private func savePlan() {
-        let newPlan = PlanConfiguration(items: planItems, name: planName, district: self.district)
-        planManager.savePlan(newPlan)
-        presentationMode.wrappedValue.dismiss()
     }
 }
 
@@ -169,6 +185,7 @@ struct PlanItemRow: View {
 struct CategoryPickerView: View {
     let onSelect: (PlanCategory) -> Void
     @Environment(\.presentationMode) var presentationMode
+    @StateObject private var dismissalManager = SheetDismissalManager.shared
     
     var body: some View {
         NavigationView {
@@ -187,6 +204,11 @@ struct CategoryPickerView: View {
                 trailing: Button("İptal") { presentationMode.wrappedValue.dismiss() }
             )
         }
+        .onReceive(dismissalManager.$shouldDismissAllSheets) { shouldDismiss in
+            if shouldDismiss {
+                presentationMode.wrappedValue.dismiss()
+            }
+        }
     }
 }
 
@@ -198,6 +220,7 @@ struct EditPlanItemView: View {
     @State private var title: String
     @State private var maxCount: Int
     @Environment(\.presentationMode) var presentationMode
+    @StateObject private var dismissalManager = SheetDismissalManager.shared
     
     init(item: PlanItem, onSave: @escaping (PlanItem) -> Void) {
         self.item = item
@@ -229,6 +252,9 @@ struct EditPlanItemView: View {
                 leading: Button("İptal") { presentationMode.wrappedValue.dismiss() },
                 trailing: Button("Kaydet") { saveItem() }
             )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
+            presentationMode.wrappedValue.dismiss()
         }
     }
     

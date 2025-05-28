@@ -9,6 +9,8 @@ import SwiftUI
 
 struct PlanView: View {
     @ObservedObject var viewModel: PlanViewModel
+    let onSavePlan: ((PlanConfiguration) -> Void)?
+    @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
         ScrollView {
@@ -53,6 +55,19 @@ struct PlanView: View {
             .padding()
         }
         .navigationTitle("\(viewModel.district.name) Planı")
+        .navigationBarItems(
+            trailing: Button("Kaydet") {
+                savePlan()
+            }
+        )
+        .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
+            presentationMode.wrappedValue.dismiss()
+        }
+    }
+    
+    private func savePlan() {
+        onSavePlan?(viewModel.currentPlanConfiguration)
+        GlobalDismissManager.shared.dismissAll()
     }
     
     // Sonraki yeri bul
