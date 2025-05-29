@@ -11,6 +11,7 @@ struct PlanView: View {
     @ObservedObject var viewModel: PlanViewModel
     let onSavePlan: ((PlanConfiguration) -> Void)?
     @Environment(\.presentationMode) var presentationMode
+    @State private var hasUnsavedChanges = false // Değişiklik takibi için
 
     var body: some View {
         ScrollView {
@@ -61,18 +62,14 @@ struct PlanView: View {
                 Button("Kaydet") {
                     savePlan()
                 }
+                .foregroundColor(hasUnsavedChanges ? .blue : .gray) // Değişiklik varsa mavi, yoksa gri
+                .disabled(!hasUnsavedChanges) // Değişiklik yoksa disable
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
             presentationMode.wrappedValue.dismiss()
         }
-        .onDisappear {
-            // View kapanırken değişiklikleri kaydet
-            viewModel.syncPlanAdvicesToConfiguration()
-            if let onSavePlan = onSavePlan {
-                onSavePlan(viewModel.currentPlanConfiguration)
-            }
-        }
+        // onDisappear kaldırıldı - artık otomatik kaydetme yok
     }
     
     private func savePlan() {
@@ -82,6 +79,8 @@ struct PlanView: View {
         if let onSavePlan = onSavePlan {
             onSavePlan(viewModel.currentPlanConfiguration)
         }
+        
+        hasUnsavedChanges = false // Kaydedildikten sonra değişiklik bayrağını sıfırla
         GlobalDismissManager.shared.dismissAll()
     }
     
@@ -123,6 +122,7 @@ struct PlanView: View {
         }
 
         viewModel.suggestAlternative(for: planItemId, dislikedPlace: place, reason: reason)
+        hasUnsavedChanges = true // Değişiklik yapıldığını işaretle
     }
 }
 
