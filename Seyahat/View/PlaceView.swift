@@ -6,18 +6,19 @@
 //
 
 import SwiftUI
-import CachedAsyncImage // Eğer kullanıyorsanız
+import CachedAsyncImage
 
 struct PlaceView: View {
-    @ObservedObject var viewModel: PlaceViewModel // Bu, Place'e özel küçük ViewModel
+    @ObservedObject var viewModel: PlaceViewModel
     
     @State private var showFilterMenu = false
+    @State private var showPlaceSelection = false
     var onFilterSelected: ((String) -> Void)?
+    var onManualPlaceSelected: ((Place) -> Void)?
 
     private func priceLevelString(for level: Int?) -> String? {
         guard let level = level, level > 0 else { return nil }
-        // Google genellikle 1-4 arası değer döndürür. İsteğe bağlı olarak max sınırı koyabilirsiniz.
-        let maxLevel = 4 // Örneğin en fazla 4 ₺ gösterelim
+        let maxLevel = 4
         return String(repeating: "₺", count: min(level, maxLevel))
     }
 
@@ -33,7 +34,7 @@ struct PlaceView: View {
                     Text(String(format: "%.1f", rating))
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                    StarsView(rating: rating, maxRating: 5) // StarsView'ınızın olduğunu varsayıyorum
+                    StarsView(rating: rating, maxRating: 5)
                         .font(.subheadline)
                 } else {
                     Text("Puan Yok")
@@ -47,7 +48,7 @@ struct PlaceView: View {
                     Text(priceStr)
                         .font(.subheadline)
                         .fontWeight(.medium)
-                        .foregroundColor(Color.green.opacity(0.9)) // Rengi belirginleştirdim
+                        .foregroundColor(Color.green.opacity(0.9))
                 }
             }
 
@@ -57,24 +58,21 @@ struct PlaceView: View {
                     .foregroundColor(.gray)
             }
             
-            // PhotoGalleryView ve ReviewView (önceki gibi)
             if let photos = viewModel.place.photos, !photos.isEmpty {
                  PhotoGalleryView(viewModel: PhotoGalleryViewModel(imageURLs: photos, morePhotoURL: viewModel.place.googleMapsLinks.photosUri))
                     .padding(.vertical, 5)
             }
             
             if let reviews = viewModel.place.reviews, !reviews.isEmpty {
-                            if let moreReviewURL = viewModel.place.googleMapsLinks.reviewsUri {
-                                ReviewView(viewModel: ReviewViewModel(reviewList: reviews, moreReviewURL: moreReviewURL))
-                            } else {
-                                ReviewView(viewModel: ReviewViewModel(reviewList: reviews))
-                            }
-                        }
+                if let moreReviewURL = viewModel.place.googleMapsLinks.reviewsUri {
+                    ReviewView(viewModel: ReviewViewModel(reviewList: reviews, moreReviewURL: moreReviewURL))
+                } else {
+                    ReviewView(viewModel: ReviewViewModel(reviewList: reviews))
+                }
+            }
 
-            // Butonlar ve alt menü (önceki gibi, FilterReasonButton ile)
             VStack(spacing: 10) {
                 HStack(spacing: 12) {
-                    // Yol Tarifi Butonu...
                     if let directionsUrlString = viewModel.place.googleMapsLinks.directionsUri,
                        let directionsUrl = URL(string: directionsUrlString) {
                         Link(destination: directionsUrl) {
@@ -88,7 +86,7 @@ struct PlaceView: View {
                                 .shadow(radius: 2)
                         }
                     }
-                    // Beğenmedim Butonu...
+                    
                     Button(action: {
                         withAnimation(.spring()) {
                             showFilterMenu.toggle()
@@ -107,9 +105,22 @@ struct PlaceView: View {
                 
                 if showFilterMenu {
                     VStack(alignment: .leading, spacing: 8) {
-                        FilterReasonButton(title: "Çok Uzak Geldi", reasonKey: "Uzak", action: { onFilterSelected?("Uzak"); showFilterMenu = false })
-                        FilterReasonButton(title: "Bütçeme Uymadı (Pahalı)", reasonKey: "Pahalı", action: { onFilterSelected?("Pahalı"); showFilterMenu = false })
-                        FilterReasonButton(title: "Başka Bir Öneri Göster", reasonKey: "Rastgele", action: { onFilterSelected?("Rastgele"); showFilterMenu = false })
+                        FilterReasonButton(title: "Çok Uzak Geldi", reasonKey: "Uzak", action: {
+                            onFilterSelected?("Uzak")
+                            showFilterMenu = false
+                        })
+                        FilterReasonButton(title: "Bütçeme Uymadı (Pahalı)", reasonKey: "Pahalı", action: {
+                            onFilterSelected?("Pahalı")
+                            showFilterMenu = false
+                        })
+                        FilterReasonButton(title: "Başka Bir Öneri Göster", reasonKey: "Rastgele", action: {
+                            onFilterSelected?("Rastgele")
+                            showFilterMenu = false
+                        })
+                        FilterReasonButton(title: "Kendim Seçeyim", reasonKey: "Manual", action: {
+                            showPlaceSelection = true
+                            showFilterMenu = false
+                        })
                     }
                     .padding(.top, 8)
                     .transition(.asymmetric(insertion: .scale(scale: 0.9, anchor: .top).combined(with: .opacity), removal: .opacity))
@@ -121,9 +132,16 @@ struct PlaceView: View {
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3)
+        .sheet(isPresented: $showPlaceSelection) {
+            if let onManualPlaceSelected = onManualPlaceSelected {
+                PlaceSelectionView(
+                    viewModel: viewModel.createPlaceSelectionViewModel(),
+                    onPlaceSelected: onManualPlaceSelected
+                )
+            }
+        }
     }
 }
-
 // FilterReasonButton (önceki gibi)
 struct FilterReasonButton: View {
     let title: String

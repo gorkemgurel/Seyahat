@@ -11,13 +11,13 @@ import CoreLocation
 class PlanViewModel: ObservableObject {
     var district: District
     
-    private var filteredPlacesByCategory: [PlanCategory: [Place]] = [:]
+    private var _filteredPlacesByCategory: [PlanCategory: [Place]] = [:]
     
     @Published var selectedSortOption: PlaceSortOption = .reviewCountDescending
     @Published var currentPlanConfiguration: PlanConfiguration = .defaultPlan
     @Published var planAdvices: [UUID: [Place]] = [:]
     
-    private var sessionDislikedAndActivePlaceNames: Set<String> = []
+    private var _sessionDislikedAndActivePlaceNames: Set<String> = []
     private let turkishLocale = Locale(identifier: "tr_TR")
 
     init(district: District, planConfiguration: PlanConfiguration = .defaultPlan) {
@@ -30,6 +30,15 @@ class PlanViewModel: ObservableObject {
         if planAdvices.isEmpty {
             generateInitialAdvices()
         }
+    }
+    
+    // Public accessors for private properties
+    var filteredPlacesByCategory: [PlanCategory: [Place]] {
+        return _filteredPlacesByCategory
+    }
+    
+    var sessionDislikedAndActivePlaceNames: Set<String> {
+        return _sessionDislikedAndActivePlaceNames
     }
     
     func updatePlanConfiguration(_ newConfiguration: PlanConfiguration) {
@@ -64,9 +73,27 @@ class PlanViewModel: ObservableObject {
                 planAdvices[item.id] = savedPlaces
                 // Kayıtlı yerleri session disliked listesine ekle
                 for place in savedPlaces {
-                    sessionDislikedAndActivePlaceNames.insert(place.name)
+                    _sessionDislikedAndActivePlaceNames.insert(place.name)
                 }
             }
+        }
+    }
+    
+    // Mekan değiştirme metodu
+    func replacePlace(originalPlace: Place, newPlace: Place, planItemId: UUID) {
+        guard var currentAdvices = planAdvices[planItemId] else { return }
+        
+        // Eski mekanı listeden çıkar
+        if let index = currentAdvices.firstIndex(where: { $0.name == originalPlace.name }) {
+            currentAdvices[index] = newPlace
+            planAdvices[planItemId] = currentAdvices
+            
+            // Session tracking'i güncelle
+            _sessionDislikedAndActivePlaceNames.remove(originalPlace.name)
+            _sessionDislikedAndActivePlaceNames.insert(newPlace.name)
+            
+            // Otomatik sync
+            autoSyncConfiguration()
         }
     }
     
@@ -127,13 +154,13 @@ class PlanViewModel: ObservableObject {
     }
     
     private func setupFilteredPlaces() {
-        filteredPlacesByCategory.removeAll()
+        _filteredPlacesByCategory.removeAll()
         
         let usedCategories = Set(currentPlanConfiguration.items.map { $0.category })
         
         for category in usedCategories {
             let places = district.categories[category.districtCategoryIndex].places
-            filteredPlacesByCategory[category] = filterPlaces(
+            _filteredPlacesByCategory[category] = filterPlaces(
                 places,
                 excludeNamesContaining: category.excludedWords,
                 locale: turkishLocale
@@ -157,7 +184,7 @@ class PlanViewModel: ObservableObject {
     }
     
     func generateInitialAdvices() {
-        sessionDislikedAndActivePlaceNames.removeAll()
+        _sessionDislikedAndActivePlaceNames.removeAll()
         planAdvices.removeAll()
         
         for item in currentPlanConfiguration.items {
@@ -166,13 +193,13 @@ class PlanViewModel: ObservableObject {
     }
     
     private func generateAdviceForItem(_ item: PlanItem) {
-        guard let filteredPlaces = filteredPlacesByCategory[item.category] else { return }
+        guard let filteredPlaces = _filteredPlacesByCategory[item.category] else { return }
         
         let sortedPlaces = sortPlaces(filteredPlaces, by: selectedSortOption)
         let selectedPlaces = selectNewUniquePlaces(
             from: sortedPlaces,
             count: item.maxCount,
-            excludingSet: &sessionDislikedAndActivePlaceNames
+            excludingSet: &_sessionDislikedAndActivePlaceNames
         )
         
         planAdvices[item.id] = selectedPlaces
@@ -186,6 +213,15 @@ class PlanViewModel: ObservableObject {
             return places.sorted { ($0.rating ?? 0) > ($1.rating ?? 0) }
         case .nameAscending:
             return places.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+        case .priceLevelAscending:
+            return places.sorted {
+                let price0 = $0.priceLevel ?? Int.max
+                let price1 = $1.priceLevel ?? Int.max
+                if price0 != price1 {
+                    return price0 < price1
+                }
+                return ($0.rating ?? 0.0) > ($1.rating ?? 0.0)
+            }
         }
     }
     
@@ -236,17 +272,17 @@ class PlanViewModel: ObservableObject {
 
     func suggestAlternativeForPlanItem(_ planItem: PlanItem, dislikedPlace: Place, reason: DislikeReason) {
         guard let currentAdvices = planAdvices[planItem.id],
-              let filteredPlaces = filteredPlacesByCategory[planItem.category] else { return }
+              let filteredPlaces = _filteredPlacesByCategory[planItem.category] else { return }
         
-        sessionDislikedAndActivePlaceNames.remove(dislikedPlace.name)
-        sessionDislikedAndActivePlaceNames.insert(dislikedPlace.name)
+        _sessionDislikedAndActivePlaceNames.remove(dislikedPlace.name)
+        _sessionDislikedAndActivePlaceNames.insert(dislikedPlace.name)
         
         var newAdvices: [Place] = []
         
         for advice in currentAdvices {
             if advice.name != dislikedPlace.name {
                 newAdvices.append(advice)
-                sessionDislikedAndActivePlaceNames.insert(advice.name)
+                _sessionDislikedAndActivePlaceNames.insert(advice.name)
             }
         }
         
@@ -254,7 +290,7 @@ class PlanViewModel: ObservableObject {
         
         if neededCount > 0 {
             let potentialCandidates = filteredPlaces.filter { place in
-                return !sessionDislikedAndActivePlaceNames.contains(place.name)
+                return !_sessionDislikedAndActivePlaceNames.contains(place.name)
             }
             
             let sortedCandidates = sortPlacesByReason(
@@ -266,7 +302,7 @@ class PlanViewModel: ObservableObject {
             let newlyFoundPlaces = selectNewUniquePlaces(
                 from: sortedCandidates,
                 count: neededCount,
-                excludingSet: &sessionDislikedAndActivePlaceNames
+                excludingSet: &_sessionDislikedAndActivePlaceNames
             )
             
             newAdvices.append(contentsOf: newlyFoundPlaces)
@@ -275,12 +311,10 @@ class PlanViewModel: ObservableObject {
         planAdvices[planItem.id] = Array(newAdvices.prefix(planItem.maxCount))
     }
     
-    // PlanViewModel'a bu metodu ekleyin
     func autoSyncConfiguration() {
         syncPlanAdvicesToConfiguration()
     }
 
-    // suggestAlternative metodunun sonuna bu satırı ekleyin:
     func suggestAlternative(for planItemId: UUID, dislikedPlace: Place, reason: DislikeReason) {
         guard let planItem = currentPlanConfiguration.items.first(where: { $0.id == planItemId }) else { return }
         suggestAlternativeForPlanItem(planItem, dislikedPlace: dislikedPlace, reason: reason)

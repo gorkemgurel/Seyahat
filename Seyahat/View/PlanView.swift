@@ -11,7 +11,7 @@ struct PlanView: View {
     @ObservedObject var viewModel: PlanViewModel
     let onSavePlan: ((PlanConfiguration) -> Void)?
     @Environment(\.presentationMode) var presentationMode
-    @State private var hasUnsavedChanges = false // Değişiklik takibi için
+    @State private var hasUnsavedChanges = false
 
     var body: some View {
         ScrollView {
@@ -22,17 +22,23 @@ struct PlanView: View {
                         
                         ForEach(Array(places.enumerated()), id: \.offset) { placeIndex, place in
                             PlaceView(
-                                viewModel: PlaceViewModel(place: place),
+                                viewModel: createPlaceViewModel(for: place, planItem: planItem),
                                 onFilterSelected: { reasonString in
                                     handleDislike(
                                         forPlace: place,
                                         planItemId: planItem.id,
                                         reasonString: reasonString
                                     )
+                                },
+                                onManualPlaceSelected: { selectedPlace in
+                                    handleManualPlaceSelection(
+                                        originalPlace: place,
+                                        selectedPlace: selectedPlace,
+                                        planItemId: planItem.id
+                                    )
                                 }
                             )
                             
-                            // Sonraki yere olan mesafe bilgisini göster
                             if let nextPlace = getNextPlace(currentItemIndex: itemIndex, currentPlaceIndex: placeIndex) {
                                 LocationInfoView(
                                     fromPlace: place,
@@ -62,41 +68,55 @@ struct PlanView: View {
                 Button("Kaydet") {
                     savePlan()
                 }
-                .foregroundColor(hasUnsavedChanges ? .blue : .gray) // Değişiklik varsa mavi, yoksa gri
-                .disabled(!hasUnsavedChanges) // Değişiklik yoksa disable
+                .foregroundColor(hasUnsavedChanges ? .blue : .gray)
+                .disabled(!hasUnsavedChanges)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .dismissAllViews)) { _ in
             presentationMode.wrappedValue.dismiss()
         }
-        // onDisappear kaldırıldı - artık otomatik kaydetme yok
+    }
+    
+    private func createPlaceViewModel(for place: Place, planItem: PlanItem) -> PlaceViewModel {
+        let placeViewModel = PlaceViewModel(place: place)
+        
+        // Bu kategori için mevcut tüm mekanları ve hariç tutulacak isimleri ayarla
+        if let availablePlaces = viewModel.filteredPlacesByCategory[planItem.category] {
+            placeViewModel.setAvailablePlaces(
+                availablePlaces,
+                excludedNames: viewModel.sessionDislikedAndActivePlaceNames
+            )
+        }
+        
+        return placeViewModel
+    }
+    
+    private func handleManualPlaceSelection(originalPlace: Place, selectedPlace: Place, planItemId: UUID) {
+        viewModel.replacePlace(originalPlace: originalPlace, newPlace: selectedPlace, planItemId: planItemId)
+        hasUnsavedChanges = true
     }
     
     private func savePlan() {
-        // Önce değişiklikleri configuration'a sync et
         viewModel.syncPlanAdvicesToConfiguration()
         
         if let onSavePlan = onSavePlan {
             onSavePlan(viewModel.currentPlanConfiguration)
         }
         
-        hasUnsavedChanges = false // Kaydedildikten sonra değişiklik bayrağını sıfırla
+        hasUnsavedChanges = false
         GlobalDismissManager.shared.dismissAll()
     }
     
-    // Sonraki yeri bul
     private func getNextPlace(currentItemIndex: Int, currentPlaceIndex: Int) -> Place? {
         let items = viewModel.currentPlanConfiguration.items
         let currentItem = items[currentItemIndex]
         
         guard let currentPlaces = viewModel.planAdvices[currentItem.id] else { return nil }
         
-        // Aynı kategori içinde sonraki yer var mı?
         if currentPlaceIndex < currentPlaces.count - 1 {
             return currentPlaces[currentPlaceIndex + 1]
         }
         
-        // Sonraki kategoride yer var mı?
         for nextItemIndex in (currentItemIndex + 1)..<items.count {
             let nextItem = items[nextItemIndex]
             if let nextPlaces = viewModel.planAdvices[nextItem.id], !nextPlaces.isEmpty {
@@ -122,10 +142,11 @@ struct PlanView: View {
         }
 
         viewModel.suggestAlternative(for: planItemId, dislikedPlace: place, reason: reason)
-        hasUnsavedChanges = true // Değişiklik yapıldığını işaretle
+        hasUnsavedChanges = true
     }
 }
 
+// Diğer view'lar aynı kalıyor...
 struct SectionHeaderView: View {
     let title: String
     
