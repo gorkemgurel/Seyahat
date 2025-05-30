@@ -10,7 +10,6 @@ import SwiftUI
 struct DashboardView: View {
     @ObservedObject var planManager = PlanManager.shared
     @State private var showingCitySelection = false
-    @State private var showPlanDetails = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -76,20 +75,6 @@ struct DashboardView: View {
         }
         .onAppear {
             planManager.loadSavedPlans()
-        }
-    }
-    
-    private var allPlansSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Planlarım")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
-            if planManager.savedPlans.isEmpty {
-                emptyStateView
-            } else {
-                planGrid
-            }
         }
     }
     

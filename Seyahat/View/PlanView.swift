@@ -81,26 +81,21 @@ struct PlanView: View {
     private func createPlaceViewModel(for place: Place, planItem: PlanItem) -> PlaceViewModel {
         let placeViewModel = PlaceViewModel(place: place)
         
-        // Available places'i set et
         if let availablePlaces = getAvailablePlacesForCategory(planItem.category) {
             let excludedNames = getExcludedPlaceNamesForPlan()
             placeViewModel.setAvailablePlaces(availablePlaces, excludedNames: excludedNames)
         }
         
-        // AI Engine'i set et
         placeViewModel.setAIEngine(viewModel.aiEngine)
         
         return placeViewModel
     }
 
-    // Helper metodlar (eğer yoksa ekle):
     private func getAvailablePlacesForCategory(_ category: PlanCategory) -> [Place]? {
-        // Kategoriye göre mevcut mekanları getir
         return viewModel.getPlacesForCategory(category)
     }
 
     private func getExcludedPlaceNamesForPlan() -> Set<String> {
-        // Şu an planda kullanılan mekan isimlerini getir
         return Set(viewModel.currentPlanConfiguration.items.compactMap { $0.id.uuidString })
     }
     

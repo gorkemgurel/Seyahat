@@ -52,22 +52,15 @@ struct PlanConfiguration: Codable {
         PlanItem(category: .dessert)
     ], name: "Varsayılan Plan", isDefault: true)
     
-    mutating func updateLastUsedDate() {
-        lastUsedDate = Date()
-        lastModified = Date() // Son kullanımda lastModified'ı da güncelle
-    }
-    
-    // Seçilmiş yerleri güncelleme metodları
     mutating func updateSelectedPlaces(for planItemId: UUID, places: [Place]) {
         selectedPlaces[planItemId.uuidString] = places
-        lastModified = Date() // Seçilmiş yerler güncellendiğinde lastModified'ı güncelle
+        lastModified = Date()
     }
     
     func getSelectedPlaces(for planItemId: UUID) -> [Place]? {
         return selectedPlaces[planItemId.uuidString]
     }
-    
-    // CodingKeys enum'unu da güncellemek gerekiyor
+
     enum CodingKeys: String, CodingKey {
         case items
         case name

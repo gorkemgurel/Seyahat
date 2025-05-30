@@ -45,33 +45,6 @@ struct NewTripView: View {
     }
 }
 
-struct SehirDetayView: View {
-    let sehir: String
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "building.2.crop.circle")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 100, height: 100)
-                .foregroundColor(.blue)
-
-            Text(sehir)
-                .font(.largeTitle)
-                .fontWeight(.bold)
-
-            Text("Bu sayfada \(sehir) hakkında detaylı bilgiler olabilir.")
-                .font(.body)
-                .multilineTextAlignment(.center)
-                .padding()
-
-            Spacer()
-        }
-        .padding()
-        .navigationTitle(sehir)
-    }
-}
-
 struct NewTripView_Previews: PreviewProvider {
     static var previews: some View {
         NewTripView()

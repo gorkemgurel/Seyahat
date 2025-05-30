@@ -33,34 +33,6 @@ class PlanViewModel: ObservableObject {
         }
     }
     
-    // Public accessors for private properties
-    var filteredPlacesByCategory: [PlanCategory: [Place]] {
-        return _filteredPlacesByCategory
-    }
-    
-    var sessionDislikedAndActivePlaceNames: Set<String> {
-        return _sessionDislikedAndActivePlaceNames
-    }
-    
-    func updatePlanConfiguration(_ newConfiguration: PlanConfiguration) {
-        currentPlanConfiguration = newConfiguration
-        setupFilteredPlaces()
-        generateInitialAdvices()
-    }
-    
-    func addPlanItem(_ item: PlanItem) {
-        currentPlanConfiguration.items.append(item)
-        setupFilteredPlaces()
-        generateAdviceForItem(item)
-    }
-    
-    func removePlanItem(at index: Int) {
-        guard index < currentPlanConfiguration.items.count else { return }
-        let item = currentPlanConfiguration.items[index]
-        planAdvices.removeValue(forKey: item.id)
-        currentPlanConfiguration.items.remove(at: index)
-    }
-    
     // Seçilmiş yerleri senkronize etme metodları
     func syncPlanAdvicesToConfiguration() {
         for (planItemId, places) in planAdvices {
@@ -340,8 +312,4 @@ class PlanViewModel: ObservableObject {
         // Değişiklik yapıldığında otomatik sync
         autoSyncConfiguration()
     }
-    
-    func recordUserInteraction(place: Place, liked: Bool, reason: DislikeReason? = nil, category: String = "") {
-            aiEngine.recordUserInteraction(place: place, wasLiked: liked, dislikeReason: reason)
-        }
 }

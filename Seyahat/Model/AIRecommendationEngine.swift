@@ -65,8 +65,7 @@ class AIRecommendationEngine: ObservableObject {
         loadUserProfile()
     }
     
-    // Ana AI fonksiyonu - her mekan için akıllı skor hesaplar
-    func calculateAIScore(for place: Place, category: String = "") -> Double {
+    func calculateAIScore(for place: Place) -> Double {
         var score: Double = 0
         
         // 1. Rating Score (0-35 puan)
@@ -227,18 +226,6 @@ class AIRecommendationEngine: ObservableObject {
         if let data = userDefaults.data(forKey: "AIUserProfile"),
            let decoded = try? JSONDecoder().decode(UserPreferenceProfile.self, from: data) {
             userProfile = decoded
-        }
-    }
-    
-    // AI öğrenme durumunu göster
-    func getAIInsight() -> String {
-        let interactions = userProfile.totalInteractions
-        if interactions == 0 {
-            return "AI henüz seni tanımıyor. Birkaç mekanı beğen/beğenme ki seni daha iyi anlasın! 🤖"
-        } else if interactions < 5 {
-            return "AI seni tanımaya başlıyor... (\(interactions)/5 etkileşim) 🧠"
-        } else {
-            return "AI seni tanıyor ve kişiselleştirilmiş öneriler sunuyor! ✨"
         }
     }
 }
