@@ -16,6 +16,7 @@ class PlanViewModel: ObservableObject {
     @Published var selectedSortOption: PlaceSortOption = .reviewCountDescending
     @Published var currentPlanConfiguration: PlanConfiguration = .defaultPlan
     @Published var planAdvices: [UUID: [Place]] = [:]
+    @Published var aiEngine = AIRecommendationEngine()
     
     private var _sessionDislikedAndActivePlaceNames: Set<String> = []
     private let turkishLocale = Locale(identifier: "tr_TR")
@@ -206,24 +207,41 @@ class PlanViewModel: ObservableObject {
     }
     
     func sortPlaces(_ places: [Place], by option: PlaceSortOption) -> [Place] {
-        switch option {
-        case .reviewCountDescending:
-            return places.sorted { ($0.userRatingCount ?? 0) > ($1.userRatingCount ?? 0) }
-        case .ratingDescending:
-            return places.sorted { ($0.rating ?? 0) > ($1.rating ?? 0) }
-        case .nameAscending:
-            return places.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
-        case .priceLevelAscending:
-            return places.sorted {
-                let price0 = $0.priceLevel ?? Int.max
-                let price1 = $1.priceLevel ?? Int.max
-                if price0 != price1 {
-                    return price0 < price1
+            switch option {
+            case .reviewCountDescending:
+                return places.sorted { ($0.userRatingCount ?? 0) > ($1.userRatingCount ?? 0) }
+            case .ratingDescending:
+                return places.sorted { ($0.rating ?? 0) > ($1.rating ?? 0) }
+            case .nameAscending:
+                return places.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+            case .priceLevelAscending:
+                return places.sorted {
+                    let price0 = $0.priceLevel ?? Int.max
+                    let price1 = $1.priceLevel ?? Int.max
+                    if price0 != price1 {
+                        return price0 < price1
+                    }
+                    return ($0.rating ?? 0.0) > ($1.rating ?? 0.0)
                 }
-                return ($0.rating ?? 0.0) > ($1.rating ?? 0.0)
+            case .aiRecommended:
+                return places.sorted { place1, place2 in
+                    let score1 = aiEngine.calculateAIScore(for: place1)
+                    let score2 = aiEngine.calculateAIScore(for: place2)
+                    return score1 > score2
+                }
             }
         }
-    }
+    
+    func getPlacesForCategory(_ category: PlanCategory) -> [Place]? {
+            return _filteredPlacesByCategory[category]
+        }
+        
+        // Plan için kullanılan mekan isimlerini döndür
+        func getExcludedPlaceNamesForPlan() -> Set<String> {
+            return Set(currentPlanConfiguration.items.compactMap { item in
+                planAdvices[item.id]?.compactMap { $0.name }
+            }.flatMap { $0 })
+        }
     
     private func selectNewUniquePlaces(from sortedList: [Place], count: Int, excludingSet: inout Set<String>) -> [Place] {
         var results: [Place] = []
@@ -322,4 +340,8 @@ class PlanViewModel: ObservableObject {
         // Değişiklik yapıldığında otomatik sync
         autoSyncConfiguration()
     }
+    
+    func recordUserInteraction(place: Place, liked: Bool, reason: DislikeReason? = nil, category: String = "") {
+            aiEngine.recordUserInteraction(place: place, wasLiked: liked, dislikeReason: reason)
+        }
 }

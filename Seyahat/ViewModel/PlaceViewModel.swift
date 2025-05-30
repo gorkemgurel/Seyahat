@@ -11,6 +11,7 @@ class PlaceViewModel: ObservableObject {
     let place: Place
     var availablePlacesForSelection: [Place] = []
     var excludedPlaceNames: Set<String> = []
+    var aiEngine: AIRecommendationEngine?
     
     init(place: Place) {
         self.place = place
@@ -21,10 +22,15 @@ class PlaceViewModel: ObservableObject {
         self.excludedPlaceNames = excludedNames
     }
     
+    func setAIEngine(_ aiEngine: AIRecommendationEngine) {
+        self.aiEngine = aiEngine
+    }
+    
     func createPlaceSelectionViewModel() -> PlaceSelectionViewModel {
         return PlaceSelectionViewModel(
             availablePlaces: availablePlacesForSelection,
-            excludedPlaceNames: excludedPlaceNames
+            excludedPlaceNames: excludedPlaceNames,
+            aiEngine: aiEngine
         )
     }
 }

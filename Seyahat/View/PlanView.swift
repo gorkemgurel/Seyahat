@@ -38,6 +38,7 @@ struct PlanView: View {
                                     )
                                 }
                             )
+                            .environmentObject(viewModel.aiEngine) // AI Engine'i geçir
                             
                             if let nextPlace = getNextPlace(currentItemIndex: itemIndex, currentPlaceIndex: placeIndex) {
                                 LocationInfoView(
@@ -80,20 +81,27 @@ struct PlanView: View {
     private func createPlaceViewModel(for place: Place, planItem: PlanItem) -> PlaceViewModel {
         let placeViewModel = PlaceViewModel(place: place)
         
-        // Bu kategori için mevcut tüm mekanları ve hariç tutulacak isimleri ayarla
-        if let availablePlaces = viewModel.filteredPlacesByCategory[planItem.category] {
-            placeViewModel.setAvailablePlaces(
-                availablePlaces,
-                excludedNames: viewModel.sessionDislikedAndActivePlaceNames
-            )
+        // Available places'i set et
+        if let availablePlaces = getAvailablePlacesForCategory(planItem.category) {
+            let excludedNames = getExcludedPlaceNamesForPlan()
+            placeViewModel.setAvailablePlaces(availablePlaces, excludedNames: excludedNames)
         }
+        
+        // AI Engine'i set et
+        placeViewModel.setAIEngine(viewModel.aiEngine)
         
         return placeViewModel
     }
-    
-    private func handleManualPlaceSelection(originalPlace: Place, selectedPlace: Place, planItemId: UUID) {
-        viewModel.replacePlace(originalPlace: originalPlace, newPlace: selectedPlace, planItemId: planItemId)
-        hasUnsavedChanges = true
+
+    // Helper metodlar (eğer yoksa ekle):
+    private func getAvailablePlacesForCategory(_ category: PlanCategory) -> [Place]? {
+        // Kategoriye göre mevcut mekanları getir
+        return viewModel.getPlacesForCategory(category)
+    }
+
+    private func getExcludedPlaceNamesForPlan() -> Set<String> {
+        // Şu an planda kullanılan mekan isimlerini getir
+        return Set(viewModel.currentPlanConfiguration.items.compactMap { $0.id.uuidString })
     }
     
     private func savePlan() {
@@ -141,8 +149,30 @@ struct PlanView: View {
             return
         }
 
+        // AI'a kullanıcı davranışını öğret
+        if let planItem = viewModel.currentPlanConfiguration.items.first(where: { $0.id == planItemId }) {
+            viewModel.aiEngine.recordUserInteraction(
+                place: place,
+                wasLiked: false,
+                dislikeReason: reason
+            )
+        }
+
         viewModel.suggestAlternative(for: planItemId, dislikedPlace: place, reason: reason)
         hasUnsavedChanges = true
+    }
+    
+    private func handleManualPlaceSelection(originalPlace: Place, selectedPlace: Place, planItemId: UUID) {
+        // Eski yer beğenilmedi, yeni yer beğenildi
+        viewModel.aiEngine.recordUserInteraction(place: originalPlace, wasLiked: false, dislikeReason: .general)
+        viewModel.aiEngine.recordUserInteraction(place: selectedPlace, wasLiked: true)
+        
+        viewModel.replacePlace(originalPlace: originalPlace, newPlace: selectedPlace, planItemId: planItemId)
+        hasUnsavedChanges = true
+    }
+    
+    private func getPlanItem(by id: UUID) -> PlanItem? {
+        return viewModel.currentPlanConfiguration.items.first(where: { $0.id == id })
     }
 }
 

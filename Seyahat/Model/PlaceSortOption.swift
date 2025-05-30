@@ -8,6 +8,7 @@
 import Foundation
 
 enum PlaceSortOption: String, CaseIterable, Identifiable {
+    case aiRecommended = "AI Önerisi 🤖"
     case reviewCountDescending = "Yorum Sayısına Göre"
     case ratingDescending = "Puanına Göre"
     case nameAscending = "İsme Göre (A-Z)"

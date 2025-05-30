@@ -51,7 +51,7 @@ struct CreatePlanView: View {
                         }
                     }
                     
-                    if !planItems.isEmpty {
+                    /*if !planItems.isEmpty {
                         Section(header: Text("Önizleme")) {
                             ForEach(planItems) { item in
                                 VStack(alignment: .leading, spacing: 4) {
@@ -65,7 +65,7 @@ struct CreatePlanView: View {
                                 .padding(.vertical, 2)
                             }
                         }
-                    }
+                    }*/
                 }
                 .listStyle(InsetGroupedListStyle())
             }
@@ -153,19 +153,19 @@ struct PlanItemRow: View {
                         .foregroundColor(categoryColor(for: item.category))
                         .cornerRadius(4)
                     
-                    Text("• \(item.maxCount) öneri")
+                    /*Text("• \(item.maxCount) öneri")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.secondary)*/
                 }
             }
             
             Spacer()
             
-            Button(action: onEdit) {
+            /*Button(action: onEdit) {
                 Image(systemName: "pencil")
                     .foregroundColor(.blue)
             }
-            .buttonStyle(BorderlessButtonStyle())
+            .buttonStyle(BorderlessButtonStyle())*/
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive, action: onDelete) {

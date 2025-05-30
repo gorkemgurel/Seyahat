@@ -8,6 +8,9 @@
 import SwiftUI
 import CachedAsyncImage
 
+import SwiftUI
+import CachedAsyncImage // Eğer kullanıyorsanız
+
 struct PlaceView: View {
     @ObservedObject var viewModel: PlaceViewModel
     
@@ -15,11 +18,19 @@ struct PlaceView: View {
     @State private var showPlaceSelection = false
     var onFilterSelected: ((String) -> Void)?
     var onManualPlaceSelected: ((Place) -> Void)?
+    
+    // AI Engine referansı - PlanView'dan geçirilecek
+    var aiEngine: AIRecommendationEngine?
 
     private func priceLevelString(for level: Int?) -> String? {
         guard let level = level, level > 0 else { return nil }
         let maxLevel = 4
         return String(repeating: "₺", count: min(level, maxLevel))
+    }
+    
+    // AI Score hesaplama
+    private var aiScore: Double {
+        return aiEngine?.calculateAIScore(for: viewModel.place) ?? 50
     }
 
     var body: some View {
@@ -43,6 +54,11 @@ struct PlaceView: View {
                 }
                 
                 Spacer()
+                
+                // AI Score Badge - sadece AI sıralaması aktifse göster
+                if aiEngine != nil {
+                    AIScoreBadge(score: aiScore)
+                }
                 
                 if let priceStr = priceLevelString(for: viewModel.place.priceLevel) {
                     Text(priceStr)
@@ -142,7 +158,38 @@ struct PlaceView: View {
         }
     }
 }
-// FilterReasonButton (önceki gibi)
+
+// AI Score Badge Component
+struct AIScoreBadge: View {
+    let score: Double
+    
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "brain.head.profile")
+                .font(.caption2)
+                .foregroundColor(.purple)
+            Text("\(Int(score))%")
+                .font(.caption2)
+                .fontWeight(.medium)
+                .foregroundColor(.purple)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [.purple.opacity(0.15), .blue.opacity(0.15)]),
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.purple.opacity(0.3), lineWidth: 0.5)
+        )
+    }
+}
+
 struct FilterReasonButton: View {
     let title: String
     let reasonKey: String

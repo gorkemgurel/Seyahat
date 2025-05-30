@@ -17,10 +17,12 @@ class PlaceSelectionViewModel: ObservableObject {
     
     private let availablePlaces: [Place]
     private let excludedPlaceNames: Set<String>
+    private let aiEngine: AIRecommendationEngine?
     
-    init(availablePlaces: [Place], excludedPlaceNames: Set<String> = []) {
+    init(availablePlaces: [Place], excludedPlaceNames: Set<String> = [], aiEngine: AIRecommendationEngine? = nil) {
         self.availablePlaces = availablePlaces
         self.excludedPlaceNames = excludedPlaceNames
+        self.aiEngine = aiEngine
         updateSortedPlaces()
     }
     
@@ -48,6 +50,16 @@ class PlaceSelectionViewModel: ObservableObject {
                     return price0 < price1
                 }
                 return ($0.rating ?? 0.0) > ($1.rating ?? 0.0)
+            }
+        case .aiRecommended:
+            guard let aiEngine = aiEngine else {
+                // AI Engine yoksa rating'e göre sırala
+                return places.sorted { ($0.rating ?? 0) > ($1.rating ?? 0) }
+            }
+            return places.sorted { place1, place2 in
+                let score1 = aiEngine.calculateAIScore(for: place1)
+                let score2 = aiEngine.calculateAIScore(for: place2)
+                return score1 > score2
             }
         }
     }
