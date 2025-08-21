@@ -1,4 +1,4 @@
-# Seyahat Uygulaması
+# Turla
 
 Şehir ve ilçe seçimine göre otomatik ve kişiselleştirilmiş gezi planları oluşturan bir seyahat uygulaması.  
 Kategori bazlı mekan önerileri sunar (kahvaltı, müze, kafe gibi) ve öneriler kullanıcı geri bildirimlerine göre güncellenir.  
